@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom View Quest</title>
+  <style>
+    :root {
+      --brand: #00a1e0;
+      --brand-dark: #0088b3;
+      --ink: #004b87;
+      --ink-strong: #0b2a4a;
+      --bg: #f5fbff;
+      --panel: #ffffff;
+      --border: #e0e7ef;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      padding: 20px;
+      color: var(--ink);
+    }
+    .container {
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .panel {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      width: 100%;
+      display: none;
+      animation: slideIn 0.5s ease;
+    }
+    .panel.active { display: block; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .cro-header { font-size: 20px; color: var(--brand); font-weight: 700; margin-bottom: 10px; letter-spacing: 1px; text-transform: uppercase; text-align: center; }
+    .logo { width: 160px; height: auto; display: block; margin: 0 auto 16px; }
+    .game-title { font-size: 42px; color: var(--brand); font-weight: 800; margin-bottom: 20px; letter-spacing: 1px; text-align: center; }
+    .game-description { font-size: 16px; color: var(--ink-strong); line-height: 1.8; margin-bottom: 30px; max-width: 640px; margin-left: auto; margin-right: auto; text-align: center; }
+    .cta-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .start-btn {
+      background: var(--brand);
+      color: #ffffff;
+      border: none;
+      padding: 16px 50px;
+      font-size: 18px;
+      font-weight: 800;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 20px rgba(0, 161, 224, 0.25);
+      letter-spacing: 0.5px;
+    }
+    .start-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0, 161, 224, 0.4); }
+    .start-btn:active { transform: translateY(-1px); }
+    .game-header { text-align: center; margin-bottom: 20px; display: grid; gap: 6px; }
+    .game-header h1 { font-size: 32px; color: var(--brand); margin-bottom: 4px; }
+    .subtitle { font-size: 15px; color: var(--ink-strong); margin-top: 4px; }
+    .stats { display: flex; justify-content: center; gap: 24px; margin-top: 10px; font-size: 16px; color: #111; flex-wrap: wrap; }
+    .order-wrapper { display: grid; gap: 16px; width: 100%; justify-items: center; }
+    #questionList { width: 100%; max-width: 840px; }
+    .cards { background: #f8f9fa; padding: 26px; border-radius: 16px; border: 2px solid #e0e0e0; display: grid; gap: 16px; position: relative; overflow: hidden; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12); }
+    .question-card { background: #ffffff; border: 2px solid #ddd; border-radius: 12px; padding: 18px; display: grid; gap: 14px; }
+    .card-badge { display: inline-block; align-self: start; padding: 7px 12px; border-radius: 10px; background: #e8f4fb; color: var(--ink); font-weight: 800; font-size: 13px; }
+    .question-text { font-weight: 700; color: var(--brand); line-height: 1.5; }
+    .choice-grid { display: grid; gap: 12px; }
+    .choice-btn {
+      background: white;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--ink-strong);
+      text-align: left;
+      display: grid;
+      grid-template-columns: 50px 1fr;
+      align-items: center;
+      gap: 12px;
+    }
+    .choice-key {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: #e8f4fb;
+      color: var(--ink);
+      font-weight: 800;
+      text-align: center;
+    }
+    .choice-btn:hover { border-color: var(--brand); box-shadow: 0 8px 18px rgba(0, 161, 224, 0.2); transform: translateY(-2px); }
+    .choice-btn.selected { box-shadow: 0 0 0 2px rgba(0, 161, 224, 0.18); border-color: #b7c6d8; }
+    .choice-btn.locked { cursor: default; opacity: 0.6; box-shadow: none; }
+    .choice-btn.correct { background: #e6f7ef !important; border-color: #16a34a !important; color: #166534 !important; }
+    .choice-btn.incorrect { background: #fff1f2 !important; border-color: #ef4444 !important; color: #991b1b !important; }
+    .tagline { font-size: 14px; color: #5a6a80; font-weight: 700; }
+    .game-controls { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
+    .game-btn { padding: 12px 30px; font-size: 16px; font-weight: 700; border: none; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; }
+    .btn-home { background: var(--brand); color: white; }
+    .btn-home:hover { background: var(--brand-dark); transform: translateY(-2px); }
+    .btn-link { padding: 10px 16px; border-radius: 10px; border: 2px solid var(--brand); background: #e8f4fb; color: var(--ink); font-weight: 700; text-decoration: none; cursor: pointer; display: inline-block; transition: all 0.2s ease; min-width: 180px; text-align: center; }
+    .btn-link:hover { background: var(--brand); color: #ffffff; box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08); transform: translateY(-1px); }
+    .message { font-size: 16px; font-weight: 700; color: var(--brand); min-height: 22px; text-align: center; margin-top: 4px; }
+    .message.success { color: #16a34a; }
+    .message.error { color: #b91c1c; }
+    .message.info { color: var(--ink); }
+    .timer-alert { color: #b91c1c; font-weight: 700; }
+    .champ { width: 200px; height: auto; display: none; margin: 8px auto 0; }
+    .champ.show { display: block; }
+    .win-screen { display: none; background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); animation: slideIn 0.6s ease-out; max-width: 960px; margin: 0 auto; width: 100%; text-align: center; }
+    .win-title { color: var(--brand); font-size: 32px; margin-bottom: 10px; }
+    .win-sub { color: var(--ink-strong); margin-bottom: 10px; }
+    .win-details { color: #111; margin-bottom: 12px; font-weight: 400; }
+    .answer-key { margin-top: 12px; font-size: 15px; color: #123; }
+    .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+    .modal.active { display: flex; }
+    .modal-content { background: #ffffff; padding: 24px; border-radius: 14px; max-width: 360px; width: 100%; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); text-align: center; border: 1px solid var(--border); }
+    .modal-content h3 { margin-bottom: 12px; color: var(--ink-strong); }
+    .modal-content input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; margin-bottom: 12px; font-size: 16px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .note { font-size: 14px; color: #5f7389; text-align: center; }
+    @media (max-width: 768px) {
+      .game-title { font-size: 34px; }
+      .choice-btn { grid-template-columns: 44px 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="panel active" id="landingPage">
+      <img class="logo" src="logo.png" alt="Logo">
+      <div class="cro-header">CRO Curiosity Cove</div>
+      <h1 class="game-title">Custom View Quest</h1>
+      <p class="game-description">
+        Ahoy, Curiosity Cove explorers!<br><br>
+        You’ve just discovered a powerful artifact… the Custom View 👓✨<br>
+        But only true data adventurers know how to wield it correctly.<br><br>
+        Let’s test your knowledge 👇
+      </p>
+      <div class="cta-row">
+        <button class="start-btn" onclick="openNamePrompt()">Start Game</button>
+      </div>
+    </div>
+
+    <div class="panel" id="gamePage">
+      <div class="game-header">
+        <h1>Custom View Quest</h1>
+        <div class="subtitle">Pick the right options before the timer ends.</div>
+        <div class="stats">
+          <span>Time: <strong id="timer">00:00</strong></span>
+          <span>Score: <strong id="scoreTracker">0/5</strong></span>
+          <span>Card: <strong id="cardTracker">1/5</strong></span>
+        </div>
+      </div>
+
+      <div class="order-wrapper">
+        <div class="cards" id="questionList"></div>
+        <div class="message info" id="message">Select your answer to begin.</div>
+        <div class="game-controls">
+          <button id="nextBtn" class="btn-link" onclick="nextCard()">Next card</button>
+          <button id="homeBtn" class="game-btn btn-home" onclick="goHome()">Back to Home</button>
+          <a id="sheetLink" class="btn-link" href="#" target="_blank" style="display:none;">Open result sheet</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="win-screen" id="winScreen">
+      <h1 class="win-title">Great Run!</h1>
+      <p class="win-sub">You finished the Custom View Quest.</p>
+      <p class="win-details" id="winDetails"></p>
+      <img src="champ.png" alt="Champion badge" class="champ show" style="width:220px; height:auto; margin:16px auto;">
+      <div class="game-controls" style="justify-content:center; margin-top:16px;">
+        <button class="game-btn btn-home" onclick="goHome()">Back to Home</button>
+      </div>
+    </div>
+
+    <div class="modal" id="nameModal">
+      <div class="modal-content">
+        <h3>Enter your name</h3>
+        <input type="text" id="playerNameInput" placeholder="Your name">
+        <div class="modal-actions">
+          <button class="start-btn" style="padding:10px 20px; border-radius:10px;" onclick="confirmName()">Start</button>
+          <button class="game-btn btn-home" style="padding:10px 20px; border-radius:10px;" onclick="closeNamePrompt()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const QUESTIONS = [
+      {
+        text: "What do you click to create a Custom View?",
+        multi: false,
+        options: [
+          { key: "A", label: "Edit" },
+          { key: "B", label: "Watch" },
+          { key: "C", label: "Save Custom View" },
+          { key: "D", label: "Data Details" }
+        ],
+        answer: ["C"]
+      },
+      {
+        text: "True or False: Custom Views change the dashboard for everyone.",
+        multi: false,
+        options: [
+          { key: "A", label: "True" },
+          { key: "B", label: "False" }
+        ],
+        answer: ["B"]
+      },
+      {
+        text: "What is generated when you save a Custom View?",
+        multi: false,
+        options: [
+          { key: "A", label: "A new workbook copy" },
+          { key: "B", label: "A unique URL" },
+          { key: "C", label: "A new data source" },
+          { key: "D", label: "A dashboard extract" }
+        ],
+        answer: ["B"]
+      },
+      {
+        text: "Where do you manage saved Custom Views?",
+        multi: false,
+        options: [
+          { key: "A", label: "Data Source tab" },
+          { key: "B", label: "View selector (top right of dashboard)" },
+          { key: "C", label: "Edit Workbook" },
+          { key: "D", label: "Tableau Agent" }
+        ],
+        answer: ["B"]
+      },
+      {
+        text: "What happens when you set a Custom View as default?",
+        multi: false,
+        options: [
+          { key: "A", label: "It becomes default for all users" },
+          { key: "B", label: "It opens automatically for you when accessing the dashboard" },
+          { key: "C", label: "It replaces the original dashboard" },
+          { key: "D", label: "It updates the published version" }
+        ],
+        answer: ["B"]
+      }
+    ];
+
+    const TIMER_SECONDS = 90;
+    const SUBMIT_URL = "https://script.google.com/macros/s/YOUR_WEB_APP_DEPLOYMENT_ID/exec"; // replace with deployed Apps Script URL
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/1KcITXuOG_eac-6yRzVS8qgMmNcTE5-y0NxghVj_JRJc/edit?usp=sharing";
+
+    let selections = [];
+    let checked = [];
+    let playerName = "";
+    let elapsedSeconds = 0;
+    let timerInterval = null;
+    let submitted = false;
+    let currentIndex = 0;
+
+    function $(id) { return document.getElementById(id); }
+
+    function openNamePrompt() {
+      $("nameModal").classList.add("active");
+      $("playerNameInput").value = playerName || "";
+      setTimeout(() => $("playerNameInput").focus(), 0);
+    }
+
+    function closeNamePrompt() {
+      $("nameModal").classList.remove("active");
+    }
+
+    function confirmName() {
+      const nameVal = $("playerNameInput").value.trim();
+      playerName = nameVal || "Player";
+      closeNamePrompt();
+      startGame();
+      updateAdminVisibility();
+    }
+
+    function startGame() {
+      document.getElementById("landingPage").classList.remove("active");
+      document.getElementById("winScreen").style.display = "none";
+      document.getElementById("gamePage").classList.add("active");
+      selections = QUESTIONS.map(() => new Set());
+      checked = QUESTIONS.map(() => false);
+      submitted = false;
+      elapsedSeconds = 0;
+      currentIndex = 0;
+      const nextBtn = $("nextBtn");
+      if (nextBtn) nextBtn.disabled = false;
+      renderCurrentQuestion();
+      updateScoreTracker();
+      updateCardTracker();
+      setStatusMessage("Select your answer to begin.", "info");
+      updateTimerDisplay();
+      stopTimer();
+      startTimer();
+      updateAdminVisibility();
+    }
+
+    function renderCurrentQuestion() {
+      const list = $("questionList");
+      list.innerHTML = "";
+      const q = QUESTIONS[currentIndex];
+      const card = document.createElement("div");
+      card.className = "question-card";
+      card.dataset.index = currentIndex;
+
+      const badge = document.createElement("span");
+      badge.className = "card-badge";
+      badge.textContent = `Card ${currentIndex + 1} of ${QUESTIONS.length}`;
+
+      const stem = document.createElement("div");
+      stem.className = "question-text";
+      stem.textContent = q.text;
+
+      const hint = document.createElement("div");
+      hint.className = "tagline";
+      hint.textContent = q.multi ? "Select all that apply." : "Select one answer.";
+
+      const grid = document.createElement("div");
+      grid.className = "choice-grid";
+
+      q.options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "choice-btn";
+        btn.dataset.choice = opt.key;
+        btn.innerHTML = `<span class="choice-key">${opt.key}</span><span>${opt.label}</span>`;
+        btn.addEventListener("click", () => {
+          if (submitted) return;
+          if (checked[currentIndex]) return;
+          toggleSelection(opt.key, q.multi);
+          updateSelectionUI(currentIndex);
+          if (q.multi) {
+            if (selections[currentIndex].size < q.answer.length) {
+              setStatusMessage(`Pick ${q.answer.length} answers total.`, "info");
+              return;
+            }
+            gradeCurrent();
+          } else {
+            gradeCurrent();
+          }
+        });
+        grid.appendChild(btn);
+      });
+
+      card.appendChild(badge);
+      card.appendChild(stem);
+      card.appendChild(hint);
+      card.appendChild(grid);
+      list.appendChild(card);
+      updateSelectionUI(currentIndex);
+      updateNextLabel();
+      setStatusMessage("Select your answer to begin.", "info");
+    }
+
+    function toggleSelection(key, multi) {
+      const set = selections[currentIndex];
+      if (!multi) {
+        set.clear();
+        set.add(key);
+      } else {
+        if (set.has(key)) { set.delete(key); } else { set.add(key); }
+      }
+    }
+
+    function updateSelectionUI(idx) {
+      const card = document.querySelector(`.question-card[data-index="${idx}"]`);
+      if (!card) return;
+      const q = QUESTIONS[idx];
+      const set = selections[idx];
+      const buttons = card.querySelectorAll(".choice-btn");
+      buttons.forEach(btn => {
+        const isSelected = set.has(btn.dataset.choice);
+        btn.classList.toggle("selected", isSelected);
+        btn.classList.remove("correct", "incorrect");
+        const isLocked = checked[idx] || submitted;
+        btn.classList.toggle("locked", isLocked);
+        btn.disabled = isLocked;
+        if (checked[idx]) {
+          if (q.answer.includes(btn.dataset.choice)) btn.classList.add("correct");
+          else if (isSelected) btn.classList.add("incorrect");
+        }
+      });
+    }
+
+    function updateScoreTracker() {
+      const correctCount = selections.reduce((sum, set, idx) => {
+        return sum + (isCorrect(idx) ? 1 : 0);
+      }, 0);
+      $("scoreTracker").textContent = `${correctCount}/${QUESTIONS.length}`;
+    }
+
+    function isCorrect(idx) {
+      const set = selections[idx];
+      const ans = QUESTIONS[idx].answer;
+      if (set.size !== ans.length) return false;
+      return ans.every(a => set.has(a));
+    }
+
+    function updateNextLabel() {
+      const btn = $("nextBtn");
+      if (!btn) return;
+      btn.textContent = currentIndex === QUESTIONS.length - 1 ? "See results" : "Next card";
+    }
+
+    function nextCard() {
+      if (submitted) return;
+      if (!checked[currentIndex]) {
+        gradeCurrent();
+        if (!checked[currentIndex]) return;
+      }
+      if (currentIndex < QUESTIONS.length - 1) {
+        currentIndex += 1;
+        renderCurrentQuestion();
+        updateScoreTracker();
+        updateCardTracker();
+        setStatusMessage("Select your answer to begin.", "info");
+      } else {
+        submitAnswers("manual");
+      }
+    }
+
+    function gradeCurrent() {
+      if (checked[currentIndex]) return;
+      const q = QUESTIONS[currentIndex];
+      if (selections[currentIndex].size === 0) {
+        setStatusMessage("Select an answer first.", "error");
+        return;
+      }
+      if (q.multi && selections[currentIndex].size < q.answer.length) {
+        setStatusMessage(`Pick ${q.answer.length} answers total.`, "info");
+        return;
+      }
+      checked[currentIndex] = true;
+      const correct = isCorrect(currentIndex);
+      updateSelectionUI(currentIndex);
+      updateScoreTracker();
+      updateNextLabel();
+      if (correct) {
+        setStatusMessage("Correct.", "success");
+      } else {
+        const answers = QUESTIONS[currentIndex].answer
+          .map(key => {
+            const opt = QUESTIONS[currentIndex].options.find(o => o.key === key);
+            return opt ? opt.label : key;
+          })
+          .join(", ");
+        setStatusMessage(`Incorrect. Right answer: ${answers}`, "error");
+      }
+    }
+
+    function startTimer() {
+      stopTimer();
+      timerInterval = setInterval(() => {
+        elapsedSeconds += 1;
+        if (elapsedSeconds >= TIMER_SECONDS) {
+          elapsedSeconds = TIMER_SECONDS;
+          updateTimerDisplay();
+          stopTimer();
+          submitAnswers("timer");
+          return;
+        }
+        updateTimerDisplay();
+      }, 1000);
+      updateTimerDisplay();
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function updateTimerDisplay() {
+      const remaining = Math.max(TIMER_SECONDS - elapsedSeconds, 0);
+      const minutes = String(Math.floor(remaining / 60)).padStart(2, "0");
+      const seconds = String(remaining % 60).padStart(2, "0");
+      $("timer").textContent = `${minutes}:${seconds}`;
+      if (remaining <= 15 && !submitted) {
+        $("timer").classList.add("timer-alert");
+      } else {
+        $("timer").classList.remove("timer-alert");
+      }
+    }
+
+    function updateCardTracker() {
+      $("cardTracker").textContent = `${currentIndex + 1}/${QUESTIONS.length}`;
+    }
+
+    function submitAnswers(trigger = "manual") {
+      if (submitted) return;
+      const answered = selections.filter(v => v.size > 0).length;
+      if (trigger === "manual" && answered < QUESTIONS.length) {
+        setStatusMessage("Answer every card before finishing.", "error");
+        return;
+      }
+      submitted = true;
+      stopTimer();
+      const correctCount = selections.reduce((sum, set, idx) => sum + (isCorrect(idx) ? 1 : 0), 0);
+      const percent = Math.round((correctCount / QUESTIONS.length) * 100);
+      const elapsedDisplay = formatSeconds(Math.min(elapsedSeconds, TIMER_SECONDS));
+
+      lockChoices();
+
+      const triggerText = trigger === "timer" ? "Timer expired - auto-submitted." : "Submitted.";
+      setStatusMessage(`${triggerText} ${correctCount}/${QUESTIONS.length} correct.`);
+
+      sendResult({
+        correctCount,
+        percent,
+        elapsedDisplay
+      });
+
+      showWinScreen({
+        correctCount,
+        percent,
+        elapsedDisplay
+      });
+    }
+
+    function lockChoices() {
+      document.querySelectorAll(".choice-btn").forEach(btn => {
+        btn.classList.add("locked");
+        btn.disabled = true;
+      });
+    }
+
+    function showWinScreen(stats) {
+      const game = document.getElementById("gamePage");
+      const win = $("winScreen");
+      if (game) game.classList.remove("active");
+      if (win) {
+        const name = playerName ? playerName : "Player";
+        $("winDetails").textContent = `${name}, you scored ${stats.correctCount}/${QUESTIONS.length} in ${stats.elapsedDisplay}.`;
+        win.style.display = "block";
+      }
+    }
+
+    function goHome() {
+      stopTimer();
+      submitted = false;
+      selections = QUESTIONS.map(() => new Set());
+      checked = QUESTIONS.map(() => false);
+      elapsedSeconds = 0;
+      currentIndex = 0;
+      document.getElementById("gamePage").classList.remove("active");
+      const win = $("winScreen");
+      if (win) win.style.display = "none";
+      document.getElementById("landingPage").classList.add("active");
+      setStatusMessage("");
+      updateScoreTracker();
+      updateCardTracker();
+      updateTimerDisplay();
+      updateAdminVisibility();
+    }
+
+    function setStatusMessage(text, type = "info") {
+      const messageEl = $("message");
+      if (!messageEl) return;
+      messageEl.textContent = text;
+      messageEl.classList.remove("success", "error", "info");
+      if (type === "success") messageEl.classList.add("success");
+      if (type === "error") messageEl.classList.add("error");
+      if (type === "info") messageEl.classList.add("info");
+    }
+
+    function formatSeconds(totalSeconds) {
+      const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      return `${minutes}:${seconds}`;
+    }
+
+    function sendResult(stats) {
+      if (!SUBMIT_URL || SUBMIT_URL.includes("YOUR_WEB_APP_DEPLOYMENT_ID")) return;
+      const payload = {
+        name: playerName || "",
+        score: stats.percent || 0,
+        time: stats.elapsedDisplay || "",
+        timestamp: new Date().toISOString(),
+        version: "custom-view-v1"
+      };
+      fetch(SUBMIT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
+    }
+
+    function updateAdminVisibility() {
+      const isAdmin = playerName && playerName.toLowerCase() === "reneepriego";
+      const sheetLink = $("sheetLink");
+      const nextBtn = $("nextBtn");
+      const homeBtn = $("homeBtn");
+      if (sheetLink) {
+        sheetLink.style.display = isAdmin ? "inline-block" : "none";
+        if (isAdmin) sheetLink.href = SHEET_URL;
+      }
+      if (nextBtn) nextBtn.style.display = isAdmin ? "none" : "";
+      if (homeBtn) homeBtn.style.display = isAdmin ? "none" : "";
+    }
+
+    // Initialize defaults on load
+    updateScoreTracker();
+    updateTimerDisplay();
+  </script>
+</body>
+</html>
