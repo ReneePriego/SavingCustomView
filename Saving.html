@@ -187,6 +187,9 @@
       <div class="game-controls" style="justify-content:center; margin-top:16px;">
         <button class="game-btn btn-home" onclick="goHome()">Back to Home</button>
       </div>
+      <p class="answer-key" style="margin-top:16px; font-weight:400; color:#0b2a4a;">
+        Check out the <a href="https://prod-uswest-c.online.tableau.com/t/salesforce/views/CROStarterWorkbookLearningRoadmap/SavingyourCustomView?:origin=card_share_link&:embed=n" target="_blank" style="color:#00a1e0; text-decoration:none; font-weight:700;">Saving a Custom View</a> module in the Learning Journey of Starter Workbook to reinforce your knowledge!
+      </p>
     </div>
 
     <div class="modal" id="nameModal">
@@ -260,11 +263,12 @@
 
     const TIMER_SECONDS = 90;
     const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbwtbchJJwC8kKjHdQMsKjwQkud6zxoGNgsX5z9Ip9xbEgeFE-oOpyUleg5kcKRu0NBlLQ/exec";
-    const SHEET_URL = "https://docs.google.com/spreadsheets/d/1KcITXuOG_eac-6yRzVS8qgMmNcTE5-y0NxghVj_JRJc/edit?usp=sharing";
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/14zYqNeh3biV5rh_cNIOrAMkfSXvKrsYqUcMzs8Ts7io/edit?usp=sharing";
 
     let selections = [];
     let checked = [];
     let playerName = "";
+    let optionOrders = [];
     let elapsedSeconds = 0;
     let timerInterval = null;
     let submitted = false;
@@ -296,6 +300,7 @@
       document.getElementById("gamePage").classList.add("active");
       selections = QUESTIONS.map(() => new Set());
       checked = QUESTIONS.map(() => false);
+      optionOrders = QUESTIONS.map(q => shuffle([...q.options]));
       submitted = false;
       elapsedSeconds = 0;
       currentIndex = 0;
@@ -315,6 +320,7 @@
       const list = $("questionList");
       list.innerHTML = "";
       const q = QUESTIONS[currentIndex];
+      const opts = optionOrders[currentIndex] || q.options;
       const card = document.createElement("div");
       card.className = "question-card";
       card.dataset.index = currentIndex;
@@ -334,7 +340,7 @@
       const grid = document.createElement("div");
       grid.className = "choice-grid";
 
-      q.options.forEach(opt => {
+      opts.forEach(opt => {
         const btn = document.createElement("button");
         btn.className = "choice-btn";
         btn.dataset.choice = opt.key;
@@ -365,6 +371,14 @@
       updateSelectionUI(currentIndex);
       updateNextLabel();
       setStatusMessage("Select your answer to begin.", "info");
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
     }
 
     function toggleSelection(key, multi) {
